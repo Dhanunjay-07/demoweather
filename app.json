@@ -21,7 +21,13 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Weather App",
+      "shortName": "WeatherApp",
+      "backgroundColor": "#0F2027",
+      "themeColor": "#0F2027",
+      "display": "standalone",
+      "description": "Real-time weather forecast application"
     },
     "extra": {
       "eas": {
