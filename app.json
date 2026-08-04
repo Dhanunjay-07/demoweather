@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Weather App",
+    "slug": "dhanunjay07",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0F2027"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.weatherapp.app"
+    },
+    "android": {
+      "package": "com.weatherapp.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0F2027"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7f016773-2d6f-42a3-bf8b-75b804b63797"
+      }
+    },
+    "owner": "dhanunjay07s-team"
+  }
+}
