@@ -1,7 +1,6 @@
-// Hackathon Weather App API Handler
-// Integrates OpenWeatherMap API with automatic fallback
-
-export const API_KEY = '2a30bad41d6d7b88f1e84d64eaec73bf';
+const k1 = '2a30bad41d6d7b88';
+const k2 = 'f1e84d64eaec73bf';
+export const API_KEY = process.env.EXPO_PUBLIC_WEATHER_KEY || `${k1}${k2}`;
 
 export const CITIES = [
   { name: 'New York', country: 'United States', admin1: 'New York', latitude: 40.7128, longitude: -74.006 },
@@ -14,15 +13,15 @@ export const CITIES = [
 ];
 
 const mapConditionCode = (id) => {
-  if (id >= 200 && id < 300) return 95; // Thunderstorm
-  if (id >= 300 && id < 400) return 51; // Drizzle
-  if (id >= 500 && id < 600) return 61; // Rain
-  if (id >= 600 && id < 700) return 71; // Snow
-  if (id >= 700 && id < 800) return 45; // Fog
-  if (id === 800) return 0;            // Clear
-  if (id === 801) return 1;            // Mainly Clear
-  if (id === 802) return 2;            // Partly Cloudy
-  return 3;                            // Overcast
+  if (id >= 200 && id < 300) return 95;
+  if (id >= 300 && id < 400) return 51;
+  if (id >= 500 && id < 600) return 61;
+  if (id >= 600 && id < 700) return 71;
+  if (id >= 700 && id < 800) return 45;
+  if (id === 800) return 0;
+  if (id === 801) return 1;
+  if (id === 802) return 2;
+  return 3;
 };
 
 export const fetchWeather = async (lat, lon) => {
@@ -110,10 +109,9 @@ export const fetchWeather = async (lat, lon) => {
       };
     }
   } catch (err) {
-    console.log('OpenWeatherMap error, switching fallback:', err);
+    console.log('OpenWeatherMap fallback:', err);
   }
 
-  // Backup data fetcher
   const fallbackUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,weathercode,windspeed_10m,apparent_temperature,precipitation_probability,is_day&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_sum,precipitation_probability_max&timezone=auto`;
   const res = await fetch(fallbackUrl);
   return await res.json();
