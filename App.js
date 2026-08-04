@@ -4,7 +4,6 @@ import {
   View, 
   Text, 
   ScrollView, 
-  SafeAreaView, 
   StatusBar, 
   RefreshControl, 
   ActivityIndicator, 
@@ -12,9 +11,10 @@ import {
   Platform 
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { fetchWeatherData, DEFAULT_CITIES } from './src/api/weatherApi';
+import { fetchWeather, CITIES } from './src/api';
 import { getWeatherInfo } from './src/utils/weatherCodeMap';
 import { HeaderBar } from './src/components/HeaderBar';
+import { CityChips } from './src/components/CityChips';
 import { CurrentWeather } from './src/components/CurrentWeather';
 import { HourlyForecast } from './src/components/HourlyForecast';
 import { DailyForecast } from './src/components/DailyForecast';
@@ -23,192 +23,181 @@ import { SearchModal } from './src/components/SearchModal';
 import { WeatherIcon } from './src/components/WeatherIcon';
 
 export default function App() {
-  const [city, setCity] = useState(DEFAULT_CITIES[0]); // Default to New York
-  const [unit, setUnit] = useState('C'); // 'C' or 'F'
-  const [weatherData, setWeatherData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-  const [searchVisible, setSearchVisible] = useState(false);
+  const [currentCity, setCurrentCity] = useState(CITIES[0]);
+  const [unit, setUnit] = useState('C');
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const loadWeather = useCallback(async (location = city, showLoading = true) => {
-    if (showLoading) setIsLoading(true);
-    setError(null);
+  const loadCityData = useCallback(async (targetCity = currentCity, isInitial = true) => {
+    if (isInitial) setLoading(true);
+    setErrorMsg(null);
 
     try {
-      const data = await fetchWeatherData(location.latitude, location.longitude);
-      setWeatherData(data);
+      const data = await fetchWeather(targetCity.latitude, targetCity.longitude);
+      setWeather(data);
     } catch (err) {
-      console.error('Failed to load weather:', err);
-      setError('Unable to fetch weather data. Please check your connection.');
+      console.log('Error fetching weather:', err);
+      setErrorMsg('Could not update weather. Please check connection.');
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [city]);
+  }, [currentCity]);
 
   useEffect(() => {
-    loadWeather(city, true);
-  }, [city]);
+    loadCityData(currentCity, true);
+  }, [currentCity]);
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    loadWeather(city, false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadCityData(currentCity, false);
   };
 
-  const toggleUnit = () => {
+  const handleUnitToggle = () => {
     setUnit(prev => (prev === 'C' ? 'F' : 'C'));
   };
 
-  // Determine current weather code & gradient theme
-  const currentWeather = weatherData?.current_weather;
-  const weatherCode = currentWeather?.weathercode ?? 0;
-  const isDay = currentWeather?.is_day ?? 1;
-  const weatherInfo = getWeatherInfo(weatherCode, isDay);
+  const currentCondition = weather?.current_weather;
+  const weatherCode = currentCondition?.weathercode ?? 0;
+  const isDay = currentCondition?.is_day ?? 1;
+  const info = getWeatherInfo(weatherCode, isDay);
 
   return (
-    <View style={styles.outerContainer}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <LinearGradient
-        colors={weatherInfo.gradient}
-        style={styles.backgroundGradient}
+        colors={info.gradient}
+        style={styles.gradientBg}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <SafeAreaView style={styles.safeArea}>
+        <View style={styles.safeContainer}>
           <HeaderBar
-            city={city}
+            city={currentCity}
             unit={unit}
-            onToggleUnit={toggleUnit}
-            onOpenSearch={() => setSearchVisible(true)}
+            onToggleUnit={handleUnitToggle}
+            onOpenSearch={() => setModalOpen(true)}
           />
 
-          {isLoading ? (
-            <View style={styles.centeredContent}>
+          <CityChips
+            selectedCity={currentCity}
+            onSelectCity={(city) => setCurrentCity(city)}
+          />
+
+          {loading ? (
+            <View style={styles.centerBox}>
               <ActivityIndicator size="large" color="#FFFFFF" />
-              <Text style={styles.loadingText}>Fetching latest weather...</Text>
+              <Text style={styles.loadingText}>Loading weather...</Text>
             </View>
-          ) : error ? (
-            <View style={styles.centeredContent}>
-              <WeatherIcon name="cloud-rain" size={60} color="rgba(255, 255, 255, 0.7)" />
-              <Text style={styles.errorText}>{error}</Text>
+          ) : errorMsg ? (
+            <View style={styles.centerBox}>
+              <WeatherIcon name="cloud-rain" size={54} color="rgba(255, 255, 255, 0.7)" />
+              <Text style={styles.errorText}>{errorMsg}</Text>
               <TouchableOpacity 
-                style={styles.retryButton} 
-                onPress={() => loadWeather(city, true)}
+                style={styles.retryBtn} 
+                onPress={() => loadCityData(currentCity, true)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.retryText}>Retry</Text>
+                <Text style={styles.retryText}>Try Again</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <ScrollView
-              contentContainerStyle={styles.scrollContent}
+              contentContainerStyle={styles.scrollArea}
               showsVerticalScrollIndicator={false}
               refreshControl={
                 <RefreshControl
-                  refreshing={isRefreshing}
-                  onRefresh={handleRefresh}
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
                   tintColor="#FFFFFF"
                   colors={['#FFFFFF']}
                 />
               }
             >
               <CurrentWeather
-                currentWeather={weatherData?.current_weather}
-                dailyData={weatherData?.daily}
-                weatherInfo={weatherInfo}
+                currentWeather={weather?.current_weather}
+                dailyData={weather?.daily}
+                weatherInfo={info}
                 unit={unit}
               />
 
               <HourlyForecast
-                hourlyData={weatherData?.hourly}
+                hourlyData={weather?.hourly}
                 unit={unit}
               />
 
               <DailyForecast
-                dailyData={weatherData?.daily}
+                dailyData={weather?.daily}
                 unit={unit}
               />
 
               <WeatherGrid
-                currentWeather={weatherData?.current_weather}
-                dailyData={weatherData?.daily}
+                currentWeather={weather?.current_weather}
+                dailyData={weather?.daily}
                 unit={unit}
               />
-
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>Powered by Open-Meteo Weather API</Text>
-              </View>
             </ScrollView>
           )}
 
           <SearchModal
-            visible={searchVisible}
-            onClose={() => setSearchVisible(false)}
-            onSelectCity={(newCity) => setCity(newCity)}
+            visible={modalOpen}
+            onClose={() => setModalOpen(false)}
+            onSelectCity={(selected) => setCurrentCity(selected)}
           />
-        </SafeAreaView>
+        </View>
       </LinearGradient>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
+  container: {
     flex: 1,
     backgroundColor: '#0F2027',
   },
-  backgroundGradient: {
+  gradientBg: {
     flex: 1,
   },
-  safeArea: {
+  safeContainer: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 20 : 0,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 28 : 10,
   },
-  scrollContent: {
+  scrollArea: {
     paddingBottom: 40,
   },
-  centeredContent: {
+  centerBox: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: 24,
   },
   loadingText: {
-    marginTop: 14,
-    fontSize: 16,
+    marginTop: 12,
+    fontSize: 15,
     color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '500',
   },
   errorText: {
-    marginTop: 14,
+    marginTop: 12,
     fontSize: 15,
     color: '#FFFFFF',
     textAlign: 'center',
-    lineHeight: 22,
   },
-  retryButton: {
-    marginTop: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+  retryBtn: {
+    marginTop: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 22,
+    paddingVertical: 9,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   retryText: {
     color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 14,
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  footerText: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontWeight: '400',
+    fontSize: 13,
   },
 });
