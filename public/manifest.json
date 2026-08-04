@@ -1,15 +1,19 @@
 {
-  "short_name": "Weather App",
-  "name": "Weather App - Live Forecast",
+  "id": "com.weatherapp.app",
+  "short_name": "WeatherApp",
+  "name": "Weather App",
+  "description": "Real-time global weather forecast application powered by OpenWeatherMap",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "https://raw.githubusercontent.com/expo/expo/main/templates/expo-template-blank/assets/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
   "background_color": "#0F2027",
   "theme_color": "#0F2027",
-  "display": "standalone"
+  "display": "standalone",
+  "orientation": "portrait"
 }
